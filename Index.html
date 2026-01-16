@@ -53,9 +53,16 @@
             position="0 0.2 0">
     </a-entity>
     <!--Hand tracking and grab -->
-<a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
-<a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
- </a-entity>  
+<a-entity id="leftHand" 
+hand-tracking-controls="hand: left; modelStyle: mesh; modelColor: #ffccaa"
+hand-tracking-grab-controls="hand: left;">
+</a-entity>
+
+<a-entity id="rightHand" 
+hand-tracking-controls="hand: right; modelStyle: mesh; modelColor: #ffccaa"
+hand-tracking-grab-controls="hand: right;">
+</a-entity>
+</a-entity>  
 
 <a-entity id="world-container" 
 position="0 1.5 0" 
