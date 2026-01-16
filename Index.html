@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gaussian Tests</title>
+</head>
+
+<body>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/super-three@0.177.0/build/three.module.js",
+        "aframe": "https://aframe.io/releases/1.7.1/aframe.module.min.js",
+        "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.8/spark.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import AFRAME from 'aframe';
+    import { SplatMesh, SparkRenderer } from "@sparkjsdev/spark";
+
+
+    AFRAME.registerComponent('splat', {
+      schema: {
+        src: {default: ''},
+      },
+      init: function () {
+        const splat = new SplatMesh({ url: this.data.src });
+        splat.quaternion.set(1, 0, 0, 0);
+        this.el.setObject3D('mesh', splat);
+      }
+    });
+
+    AFRAME.registerSystem('splat', {
+      init: function () {
+        const sparkRenderer = new SparkRenderer({ renderer: this.el.renderer });
+        this.sceneEl.object3D.add(sparkRenderer);
+      }
+    });
+  </script>
+  <a-scene background="color: black">
+ <a-entity id="rig" position="0 0.364 -1.6">
+    <a-entity camera
+            look-controls
+            wasd-controls="acceleration: 20"
+            position="0 0.2 0">
+    </a-entity>
+    </a-entity>
+    <a-entity position="0 0 0" rotation="180 0 0">
+      <a-entity splat="src: objects/world_low_res.spz"></a-entity>
+<!--Objekti-->
+
+<a-entity position="-0.15967 0.17156 3.69993" rotation="0 45 0">
+  
+  <a-box color="#4CC3D9"
+         scale="0.2 1 0.2"
+         event-set__enter="_event: mouseenter; color: red"
+         event-set__leave="_event: mouseleave; color: #4CC3D9"
+         animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: click; to: 1.5 1.5 1.5">
+  </a-box>
+
+  <a-sphere position="0 -0.62568 0" 
+            radius="0.12" 
+            color="#FFD700">
+  </a-sphere>
+
+</a-entity>
+  </a-scene>
+</body>
+</html>
