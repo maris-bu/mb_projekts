@@ -1,0 +1,84 @@
+<html>
+  <head>
+    <title>Mana A-Frame Pasaule</title>
+      <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+
+ <!--Event-Set Component-->
+    <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
+
+<!--A-Frame Extras-->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+ 
+ <!--navigation component used in ImGame -->   
+    <script src="a-cursor-navigation.js"></script>
+
+<!--aframe-environment-component-->
+    <script src="https://unpkg.com/aframe-environment-component@1.5.x/dist/aframe-environment-component.min.js"></script>
+ 
+
+  </head>
+  <body>
+      <a-scene> 
+        <!--Asseti--> 
+       <a-asset-item id="Robots" src="objects/char01.glb"></a-asset-item>
+
+        <!--Wiskas-->
+
+        <!--aframe-environment-component-->
+        <a-entity environment="preset: poison" position=" 0 -0.1 0"></a-entity>
+
+        <a-box  
+        position="0.45 0.5 -2.75" 
+        rotation="0 45 0" 
+        color="#4CC3D9"
+        event-set__enter="_event: mouseenter; color: red"
+        event-set__leave="_event: mouseleave; color: #4CC3D9"
+        animation__click="property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 100; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click; ">
+      </a-box>
+
+         <a-plane navmesh 
+         position="0 0 -4" 
+         rotation="-90 0 0" 
+         width="10" 
+         height="4" 
+         color="#7BC8A4">
+        </a-plane>
+
+<a-entity 
+gltf-model="#Robots" animation-mixer="clip"
+position="-1.5 0.5 -03.75"
+rotation="0 10 0"></a-entity>
+
+        
+<!--Druvis uz nekurieni-->
+   <a-entity id="door-hinge" 
+                position="-2 0 -3" 
+                rotation="0 0 0"
+                animation__click="property: rotation; from: 0 00 0; to: 0 90 0; dur: 1000; dir: alternate; loop: 1; easing: easeInOutCirc; startEvents: click; ">
+        <a-box position="0.5 1.25 0" 
+               width="1" height="2.5" depth="0.1" 
+               color="#4e2a1e">
+        </a-box> </a-entity>
+
+<!--Camera-->
+      <a-entity 
+        position="0 0 0" 
+        id="cameraRig" 
+        movement-controls="speed: 1.01; enabled:false"
+        a-cursor-teleport="cameraRig: #cameraRig; cameraHead: #head">
+        <a-entity id="head" position="0 1.6 0" camera="near: 0.1" look-controls="reverseMouseDrag: false">
+          <a-cursor color="white"></a-cursor>
+        </a-entity>
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+      </a-entity>
+
+        
+
+
+
+      <a-plane navmesh position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+      <a-sky color="#ECECEC"></a-sky>
+      
+  </body>
+</html>
