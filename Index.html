@@ -5,6 +5,9 @@
 <!--navigation component used in ImGame -->   
     <script src="components/a-cursor-navigation.js"></script>
 
+<!--A-Frame Extras-->
+<script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.6.1/dist/aframe-extras.min.js"></script>
+
 <!--Event-Set Component-->
 <script src="https://unpkg.com/aframe-event-set-component@5/dist/aframe-event-set-component.min.js"></script>
 </head>
@@ -52,29 +55,24 @@
     <!--Hand tracking and grab -->
 <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;"></a-entity>
 <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;"></a-entity>
+ </a-entity>  
 
-    </a-entity>
-    <a-entity position="0 0 0" rotation="180 0 0">
-      <a-entity splat="src: objects/room.spz"></a-entity>
-<!--Objekti-->
-
-<a-entity position="-1.2 0.17156 1.2 " rotation="0 45 0">
-  
-  <a-box color="#4CC3D9"
-         scale="0.2 1 0.2"
-         event-set__enter="_event: mouseenter; color: red"
-         event-set__leave="_event: mouseleave; color: #4CC3D9"
-         animation__click="dir: alternate; dur: 100; easing: easeInOutCirc; from: 1 1 1; loop: 1; property: scale; startEvents: click; to: 1.5 1.5 1.5">
-  </a-box>
-
-  <a-sphere 
-  grabbable
-  position="0 -0.62568 0" 
-  radius="0.12" 
-  color="#FFD700">
-  </a-sphere>
-
-</a-entity>
+<a-entity id="world-container" 
+position="0 1.5 0" 
+rotation="180 0 0"
+scale="2 2 2">
+        
+        <a-entity splat="src: objects/room.spz"></a-entity>
+        
+        <a-entity position="-1.2 0.17 1.2 " rotation="0 45 0">
+          <a-box color="#4CC3D9"
+                 scale="0.2 1 0.2"
+                 event-set__enter="_event: mouseenter; color: red"
+                 event-set__leave="_event: mouseleave; color: #4CC3D9"
+                 animation__click="dir: alternate; dur: 100; from: 1 1 1; loop: 1; property: scale; startEvents: click; to: 1.5 1.5 1.5">
+          </a-box>
+          <a-sphere grabbable position="0 -0.6 0" radius="0.12" color="#FFD700"></a-sphere>
+        </a-entity>
 
   </a-scene>
 </body>
