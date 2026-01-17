@@ -64,7 +64,7 @@
 
       // create scene AFTER everything is registered
       document.querySelector("#app").innerHTML = `
-        <a-scene physics="debug: false" background="color: black">
+        <a-scene physics="debug: false" background="color: black" xr-mode-ui="enabled: true">
 
           <a-assets>
             <a-asset-item id="navmesh-glb" src="objects/Pottery_collider.glb"></a-asset-item>
@@ -79,6 +79,9 @@
             dynamic-body="shape: sphere; sphereRadius: 0.3; mass: 0"
           >
             <a-entity camera look-controls position="0 1.6 0"></a-entity>
+
+        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;" oculus-touch-controls="hand: left" grab-controls="hand: left;"></a-entity>
+        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;" oculus-touch-controls="hand: right" grab-controls="hand: right;"></a-entity>
           </a-entity>
 
           <!-- WORLD -->
@@ -90,36 +93,45 @@
           >
 
             <!-- NAVMESH (aframe-extras) -->
-            <a-entity
-              gltf-model="#navmesh-glb"
-              nav-mesh
-              visible="false"
-            ></a-entity>
+<a-entity 
+gltf-model="objects/Pottery_collider.glb" 
+nav-mesh="" visible="false" 
+position="0 -2.63945 3.449" 
+scale="0.9 1 0.98">
+</a-entity>
 
-            <!-- COLLIDER (physics) -->
-            <a-entity
-              gltf-model="#navmesh-glb"
-              static-body="shape: mesh"
-              visible="false"
-            ></a-entity>
+<!-- COLLIDER (physics) -->
+<a-entity
+gltf-model="#navmesh-glb"
+static-body="shape: mesh"
+visible="false"
+></a-entity>
 
-            <!-- SPLAT -->
-            <a-entity splat="src: objects/pottery.spz"></a-entity>
+<!-- SPLAT -->
+<a-entity
+splat="src: objects/pottery.spz" 
+scale="1 0.7 1">
+</a-entity>
+
+    <!-- POTTERY WHEEL AND VASE -->
+    <a-entity position="-0.58 -0.5 0.58">
+    <a-entity gltf-model="objects/potters_wheel.glb" 
+    position="-0.0065 -0.04283 2.90938" 
+    scale="0.9 0.9 0.9" 
+    rotation="176 180 0"
+    static-body="shape: box">
+    </a-entity>
+              
+<a-entity 
+gltf-model="objects/ozolins_2_fake.glb" 
+position="-0.78472 0.01385 -0.93549" 
+rotation="180 0 0" scale="0.25 0.25 0.25" 
+dynamic-body="mass: 0.5; shape: box">
+</a-entity>
+            
+              </a-entity>
 
           </a-entity>
-
-<!-- POTTERY WHEEL AND VASE -->
-        <a-entity 
-          position="-0.58 -0.5 0.58 " rotation="0 45 0">
-          <gltf-model src="potters_wheel.glb" 
-          position="0 0 0"
-          rotation="0 0 0"
-          scale="1 1 1"></gltf-model>
-         <a-entity gltf-model="ozolins_2_fake.glb" 
-         position="0 1 -3" 
-         rotation="0 45 0" 
-         scale="2 2 2"></a-entity>
-        </a-entity>
 
         </a-scene>
       `;
