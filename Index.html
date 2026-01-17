@@ -35,15 +35,6 @@
         document.head.appendChild(s);
       });
 
-      // load physics system
-      await new Promise((resolve) => {
-        const s = document.createElement("script");
-        s.src =
-          "https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js";
-        s.onload = resolve;
-        document.head.appendChild(s);
-      });
-
       // Spark splat component
       AFRAME.registerComponent("splat", {
         schema: { src: { default: "" } },
@@ -64,7 +55,7 @@
 
       // create scene AFTER everything is registered
       document.querySelector("#app").innerHTML = `
-        <a-scene physics="debug: false" background="color: black" xr-mode-ui="enabled: true">
+        <a-scene background="color: black" xr-mode-ui="enabled: true">
 
           <a-assets>
             <a-asset-item id="navmesh-glb" src="objects/Pottery_collider.glb"></a-asset-item>
@@ -75,13 +66,20 @@
             id="rig"
             position="0.362 0 0.496"
             rotation="0 47.561 0"
-            movement-controls="speed: 0.15; constrainToNavMesh: true"
-            dynamic-body="shape: sphere; sphereRadius: 0.3; mass: 0"
+            movement-controls="speed: 0.1 ; constrainToNavMesh: true"
           >
             <a-entity camera look-controls position="0 1.6 0"></a-entity>
 
-        <a-entity id="leftHand" hand-tracking-grab-controls="hand: left;" oculus-touch-controls="hand: left" grab-controls="hand: left;"></a-entity>
-        <a-entity id="rightHand" hand-tracking-grab-controls="hand: right;" oculus-touch-controls="hand: right" grab-controls="hand: right;"></a-entity>
+            <a-entity id="leftHand" 
+              oculus-touch-controls="hand: left"
+              raycaster="far: 100; objects: [gltf-model]"
+              grab-controls="distance: 2">
+            </a-entity>
+            <a-entity id="rightHand" 
+              oculus-touch-controls="hand: right"
+              raycaster="far: 100; objects: [gltf-model]"
+              grab-controls="distance: 2">
+            </a-entity>
           </a-entity>
 
           <!-- WORLD -->
@@ -92,18 +90,16 @@
             scale="2 2 2"
           >
 
-            <!-- NAVMESH (aframe-extras) -->
-<a-entity 
-gltf-model="objects/Pottery_collider.glb" 
+<!-- NAVMESH (aframe-extras) -->
+<a-entity gltf-model="objects/Pottery_collider.glb" 
 nav-mesh="" visible="false" 
-position="0 -2.63945 3.449" 
+position="0.10956 -2.63945 3.449" 
 scale="0.9 1 0.98">
 </a-entity>
 
-<!-- COLLIDER (physics) -->
+<!-- COLLIDER -->
 <a-entity
 gltf-model="#navmesh-glb"
-static-body="shape: mesh"
 visible="false"
 ></a-entity>
 
@@ -118,16 +114,31 @@ scale="1 0.7 1">
     <a-entity gltf-model="objects/potters_wheel.glb" 
     position="-0.0065 -0.04283 2.90938" 
     scale="0.9 0.9 0.9" 
-    rotation="176 180 0"
-    static-body="shape: box">
+    rotation="176 180 0">
     </a-entity>
               
 <a-entity 
 gltf-model="objects/ozolins_2_fake.glb" 
 position="-0.78472 0.01385 -0.93549" 
-rotation="180 0 0" scale="0.25 0.25 0.25" 
-dynamic-body="mass: 0.5; shape: box">
+rotation="180 0 0" scale="0.25 0.25 0.25"
+class="clickable">
 </a-entity>
+
+<a-entity 
+gltf-model="objects/ceramic_vase_3d_Krievs.glb" 
+position="-0.81151 0.014 -1.29598" 
+rotation="180 0 0" scale="0.25 0.25 0.25"
+class="clickable">
+</a-entity>
+
+<a-entity 
+gltf-model="objects/ceramic_jug_Dranda_2.glb" 
+position="-0.83123 0.014 -1.53598" 
+rotation="180 0 0" scale="0.25 0.25 0.25"
+class="clickable">
+</a-entity>
+
+
             
               </a-entity>
 
