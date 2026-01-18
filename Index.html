@@ -53,6 +53,97 @@
         }
       });
 
+      // Simple grab component for VR controllers
+      AFRAME.registerComponent("simple-grab", {
+        init() {
+          let heldObject = null;
+          let originalRot = { x: 0, y: 0, z: 0 };
+          let lastHandQuat = new THREE.Quaternion();
+          const hand = this.el;
+
+          hand.addEventListener("triggerdown", (e) => {
+            const handWorldPos = new THREE.Vector3();
+            hand.object3D.getWorldPosition(handWorldPos);
+
+            const grabbables = document.querySelectorAll("[grabbable]");
+            let closest = null;
+            let closestDist = 3;
+
+            grabbables.forEach((obj) => {
+              const objWorldPos = new THREE.Vector3();
+              obj.object3D.getWorldPosition(objWorldPos);
+              const dist = handWorldPos.distanceTo(objWorldPos);
+              if (dist < closestDist) {
+                closest = obj;
+                closestDist = dist;
+              }
+            });
+
+            if (closest) {
+              heldObject = closest;
+              // Store original rotation
+              const rot = heldObject.getAttribute("rotation");
+              originalRot = { x: rot.x, y: rot.y, z: rot.z };
+              
+              // Store initial hand rotation
+              hand.object3D.getWorldQuaternion(lastHandQuat);
+              
+              heldObject.setAttribute("grabbed", true);
+            }
+          });
+
+          hand.addEventListener("triggerup", (e) => {
+            if (heldObject) {
+              heldObject.removeAttribute("grabbed");
+              heldObject = null;
+            }
+          });
+
+          this.tick = function() {
+            if (heldObject && heldObject.hasAttribute("grabbed")) {
+              const handWorldPos = new THREE.Vector3();
+              const handWorldQuat = new THREE.Quaternion();
+              hand.object3D.getWorldPosition(handWorldPos);
+              hand.object3D.getWorldQuaternion(handWorldQuat);
+
+              // Update position
+              heldObject.setAttribute("position", {
+                x: handWorldPos.x,
+                y: handWorldPos.y,
+                z: handWorldPos.z
+              });
+
+              // Calculate rotation delta
+              const rotDelta = new THREE.Quaternion().multiplyQuaternions(
+                handWorldQuat,
+                lastHandQuat.clone().invert()
+              );
+
+              // Apply delta to object rotation
+              const objRot = heldObject.getAttribute("rotation");
+              const objQuat = new THREE.Quaternion();
+              objQuat.setFromEuler(new THREE.Euler(
+                objRot.x * Math.PI / 180,
+                objRot.y * Math.PI / 180,
+                objRot.z * Math.PI / 180
+              ));
+
+              objQuat.multiplyQuaternions(rotDelta, objQuat);
+              
+              const euler = new THREE.Euler().setFromQuaternion(objQuat);
+              heldObject.setAttribute("rotation", {
+                x: euler.x * 180 / Math.PI,
+                y: euler.y * 180 / Math.PI,
+                z: euler.z * 180 / Math.PI
+              });
+
+              // Update last hand quaternion for next frame
+              lastHandQuat.copy(handWorldQuat);
+            }
+          };
+        }
+      });
+
       // create scene AFTER everything is registered
       document.querySelector("#app").innerHTML = `
         <a-scene background="color: black" xr-mode-ui="enabled: true">
@@ -68,17 +159,15 @@
             rotation="0 47.561 0"
             movement-controls="speed: 0.1 ; constrainToNavMesh: true"
           >
-            <a-entity camera look-controls position="0 1.6 0"></a-entity>
+            <a-entity camera look-controls position="0 2.5same 0"></a-entity>
 
             <a-entity id="leftHand" 
               oculus-touch-controls="hand: left"
-              raycaster="far: 100; objects: [gltf-model]"
-              grab-controls="distance: 2">
+              simple-grab>
             </a-entity>
             <a-entity id="rightHand" 
               oculus-touch-controls="hand: right"
-              raycaster="far: 100; objects: [gltf-model]"
-              grab-controls="distance: 2">
+              simple-grab>
             </a-entity>
           </a-entity>
 
@@ -91,10 +180,11 @@
           >
 
 <!-- NAVMESH (aframe-extras) -->
-<a-entity gltf-model="objects/Pottery_collider.glb" 
+<a-entity 
+gltf-model="objects/Pottery_collider.glb" 
 nav-mesh="" visible="false" 
-position="0.10956 -2.63945 3.449" 
-scale="0.9 1 0.98">
+position="-0.06711 -2.37585 3.59505" 
+scale="0.95 1 0.98">
 </a-entity>
 
 <!-- COLLIDER -->
@@ -116,33 +206,33 @@ scale="1 0.7 1">
     scale="0.9 0.9 0.9" 
     rotation="176 180 0">
     </a-entity>
-              
+    </a-entity>
+
+          </a-entity>
+
+          </a-entity>
+
+        <!-- GRABBABLE OBJECTS at scene root -->
 <a-entity 
 gltf-model="objects/ozolins_2_fake.glb" 
-position="-0.78472 0.01385 -0.93549" 
-rotation="180 0 0" scale="0.25 0.25 0.25"
-class="clickable">
+position="-2.74342 0.82753 0.7294" 
+scale="0.4 0.4 0.4" hoverable="" 
+grabbable="" id="obj1" obb-collider="centerModel: true">
 </a-entity>
 
 <a-entity 
 gltf-model="objects/ceramic_vase_3d_Krievs.glb" 
-position="-0.81151 0.014 -1.29598" 
-rotation="180 0 0" scale="0.25 0.25 0.25"
-class="clickable">
+position="-2.78748 0.88117 1.22016" 
+scale="0.5 0.5 0.5" hoverable="" 
+grabbable="" id="obj2" obb-collider="centerModel: true">
 </a-entity>
 
 <a-entity 
 gltf-model="objects/ceramic_jug_Dranda_2.glb" 
-position="-0.83123 0.014 -1.53598" 
-rotation="180 0 0" scale="0.25 0.25 0.25"
-class="clickable">
+position="-2.92266 0.7591 1.72496" 
+scale="0.35 0.35 0.3" hoverable="" 
+grabbable="" id="obj3" obb-collider="centerModel: true">
 </a-entity>
-
-
-            
-              </a-entity>
-
-          </a-entity>
 
         </a-scene>
       `;
