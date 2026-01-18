@@ -18,6 +18,75 @@
 
   <body>
     <div id="app"></div>
+    
+    <!-- Welcome Text -->
+    <div id="welcome-text" style="
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 30px 40px;
+      background: linear-gradient(135deg, rgba(44, 44, 44, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
+      color: white;
+      border-radius: 10px;
+      max-width: 400px;
+      text-align: center;
+      z-index: 900;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.6;
+      pointer-events: none;
+    ">Vidzemes podnieka <br>Gustava Ozoliņa (1866–1942) <br>darbnīca</div>
+
+    <!-- VR Button -->
+    <button id="vr-button" style="
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #555555;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 1000;
+      font-weight: bold;
+    ">Enter VR</button>
+
+    <!-- Object Info Popup -->
+    <div id="object-popup-overlay" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      display: none;
+    "></div>
+    
+    <div id="object-popup" style="
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+      color: white;
+      padding: 60px;
+      border-radius: 20px;
+      max-width: 700px;
+      text-align: center;
+      z-index: 10000;
+      display: none;
+      font-family: Arial, sans-serif;
+      box-shadow: 0 0 80px rgba(76, 175, 80, 0.8), inset 0 0 40px rgba(76, 175, 80, 0.2);
+      pointer-events: auto;
+    ">
+      <h2 id="object-title" style="margin: 0 0 30px 0; color: #4CAF50; font-size: 42px; font-weight: bold; text-shadow: 0 2px 10px rgba(0,0,0,0.8);"></h2>
+      <p id="object-description" style="margin: 0 0 30px 0; line-height: 1.9; font-size: 22px; color: #e0e0e0;"></p>
+      <p style="margin: 0; font-size: 14px; color: #888; font-style: italic;">(Release trigger to close)</p>
+    </div>
 
     <script type="module">
       import AFRAME from "aframe";
@@ -60,6 +129,8 @@
           let originalRot = { x: 0, y: 0, z: 0 };
           let lastHandQuat = new THREE.Quaternion();
           const hand = this.el;
+          const popup = document.getElementById("object-popup");
+          const overlay = document.getElementById("object-popup-overlay");
 
           hand.addEventListener("triggerdown", (e) => {
             const handWorldPos = new THREE.Vector3();
@@ -89,6 +160,14 @@
               hand.object3D.getWorldQuaternion(lastHandQuat);
               
               heldObject.setAttribute("grabbed", true);
+
+              // Show popup with object info
+              const title = heldObject.getAttribute("data-title") || "Object";
+              const description = heldObject.getAttribute("data-description") || "No description available";
+              document.getElementById("object-title").textContent = title;
+              document.getElementById("object-description").textContent = description;
+              popup.style.display = "block";
+              overlay.style.display = "block";
             }
           });
 
@@ -96,6 +175,10 @@
             if (heldObject) {
               heldObject.removeAttribute("grabbed");
               heldObject = null;
+              
+              // Hide popup
+              popup.style.display = "none";
+              overlay.style.display = "none";
             }
           });
 
@@ -119,7 +202,7 @@
                 lastHandQuat.clone().invert()
               );
 
-              // Apply delta to object rotation
+              // Apply delta to object rotation (around lower pivot point)
               const objRot = heldObject.getAttribute("rotation");
               const objQuat = new THREE.Quaternion();
               objQuat.setFromEuler(new THREE.Euler(
@@ -128,6 +211,7 @@
                 objRot.z * Math.PI / 180
               ));
 
+              // Rotate around object center (pivot at lower point is handled by visual offset in model)
               objQuat.multiplyQuaternions(rotDelta, objQuat);
               
               const euler = new THREE.Euler().setFromQuaternion(objQuat);
@@ -142,6 +226,12 @@
             }
           };
         }
+      });
+
+      // Overlay click-to-close handler
+      document.getElementById("object-popup-overlay").addEventListener("click", () => {
+        document.getElementById("object-popup").style.display = "none";
+        document.getElementById("object-popup-overlay").style.display = "none";
       });
 
       // create scene AFTER everything is registered
@@ -216,26 +306,48 @@ scale="1 0.7 1">
 <a-entity 
 gltf-model="objects/ozolins_2_fake.glb" 
 position="-2.74342 0.82753 0.7294" 
-scale="0.4 0.4 0.4" hoverable="" 
-grabbable="" id="obj1" obb-collider="centerModel: true">
+scale="0.4 0.4 0.4" 
+grabbable="" id="obj1"
+data-title="Ceramic Vase"
+data-description="A beautiful handcrafted ceramic vase. Rotate to examine the intricate details and craftsmanship.">
 </a-entity>
 
 <a-entity 
 gltf-model="objects/ceramic_vase_3d_Krievs.glb" 
 position="-2.78748 0.88117 1.22016" 
-scale="0.5 0.5 0.5" hoverable="" 
-grabbable="" id="obj2" obb-collider="centerModel: true">
+scale="0.5 0.5 0.5" 
+grabbable="" id="obj2"
+data-title="Vase by Krievs"
+data-description="An elegant pottery piece created by master craftsman Krievs. Notice the unique glaze patterns and smooth curves.">
 </a-entity>
 
 <a-entity 
 gltf-model="objects/ceramic_jug_Dranda_2.glb" 
 position="-2.92266 0.7591 1.72496" 
-scale="0.35 0.35 0.3" hoverable="" 
-grabbable="" id="obj3" obb-collider="centerModel: true">
+scale="0.35 0.35 0.3" 
+grabbable="" id="obj3"
+data-title="Ceramic Jug - Dranda Collection"
+data-description="A traditional ceramic jug from the Dranda Collection. Examine the craftsmanship and unique handle design.">
 </a-entity>
 
         </a-scene>
       `;
+
+      // VR Button Handler
+      document.getElementById("vr-button").addEventListener("click", () => {
+        const scene = document.querySelector("a-scene");
+        scene.enterVR();
+      });
+
+      // Hide welcome text when entering VR
+      document.querySelector("a-scene").addEventListener("enter-vr", () => {
+        document.getElementById("welcome-text").style.display = "none";
+      });
+
+      // Show welcome text when exiting VR
+      document.querySelector("a-scene").addEventListener("exit-vr", () => {
+        document.getElementById("welcome-text").style.display = "block";
+      });
     </script>
   </body>
 </html>
