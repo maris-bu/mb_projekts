@@ -180,8 +180,15 @@
             if (heldObject) {
               heldObject.removeAttribute("grabbed");
               
-              // Apply throw velocity
-              heldObject.setAttribute("throw-velocity", handVelocity);
+              // Only apply throw velocity to small objects (not the wheel)
+              const isHeavyObject = heldObject.id === "potters-wheel";
+              if (!isHeavyObject) {
+                // Apply throw velocity to small objects
+                heldObject.setAttribute("throw-velocity", handVelocity);
+              } else {
+                // For wheel, ensure it stays stable - clear any throw attributes
+                heldObject.removeAttribute("throw-velocity");
+              }
               
               heldObject = null;
             }
@@ -198,12 +205,53 @@
               handVelocity.subVectors(handWorldPos, lastHandPos).multiplyScalar(60); // 60 FPS normalization
               lastHandPos.copy(handWorldPos);
 
-              // Update position
-              heldObject.setAttribute("position", {
-                x: handWorldPos.x,
-                y: handWorldPos.y,
-                z: handWorldPos.z
-              });
+              const isHeavyObject = heldObject.id === "potters-wheel";
+              
+              if (isHeavyObject) {
+                // For heavy objects like the wheel: maintain distance from user
+                const camera = document.querySelector("[camera]");
+                const cameraWorldPos = new THREE.Vector3();
+                camera.object3D.getWorldPosition(cameraWorldPos);
+                
+                // Direction from camera to hand
+                const directionToHand = new THREE.Vector3().subVectors(handWorldPos, cameraWorldPos).normalize();
+                
+                // Place wheel at distance from camera in the direction of the hand
+                const wheelDistance = 1.5; // Distance from user
+                const wheelWorldPos = new THREE.Vector3().addVectors(
+                  cameraWorldPos,
+                  directionToHand.multiplyScalar(wheelDistance)
+                );
+                
+                // Convert to local position relative to wheel's parent
+                const localWheelPos = new THREE.Vector3().copy(wheelWorldPos);
+                const parent = heldObject.parentEl;
+                
+                if (parent && parent.object3D) {
+                  parent.object3D.worldToLocal(localWheelPos);
+                }
+                
+                const currentPos = heldObject.getAttribute("position");
+                heldObject.setAttribute("position", {
+                  x: localWheelPos.x,
+                  y: currentPos.y, // Keep original height
+                  z: localWheelPos.z
+                });
+              } else {
+                // For small objects: follow hand exactly (convert to local position)
+                const localHandPos = new THREE.Vector3().copy(handWorldPos);
+                const parent = heldObject.parentEl;
+                
+                if (parent && parent.object3D) {
+                  parent.object3D.worldToLocal(localHandPos);
+                }
+                
+                heldObject.setAttribute("position", {
+                  x: localHandPos.x,
+                  y: localHandPos.y,
+                  z: localHandPos.z
+                });
+              }
 
               // Calculate rotation delta
               const rotDelta = new THREE.Quaternion().multiplyQuaternions(
@@ -211,7 +259,7 @@
                 lastHandQuat.clone().invert()
               );
 
-              // Apply delta to object rotation (around lower pivot point)
+              // Apply delta to object rotation
               const objRot = heldObject.getAttribute("rotation");
               const objQuat = new THREE.Quaternion();
               objQuat.setFromEuler(new THREE.Euler(
@@ -220,15 +268,26 @@
                 objRot.z * Math.PI / 180
               ));
 
-              // Rotate around object center (pivot at lower point is handled by visual offset in model)
+              // Rotate around object center
               objQuat.multiplyQuaternions(rotDelta, objQuat);
               
-              const euler = new THREE.Euler().setFromQuaternion(objQuat);
-              heldObject.setAttribute("rotation", {
-                x: euler.x * 180 / Math.PI,
-                y: euler.y * 180 / Math.PI,
-                z: euler.z * 180 / Math.PI
-              });
+              let euler = new THREE.Euler().setFromQuaternion(objQuat);
+              
+              // For heavy objects, only allow Y rotation (revolving around vertical axis)
+              if (isHeavyObject) {
+                heldObject.setAttribute("rotation", {
+                  x: originalRot.x, // Keep original X rotation
+                  y: euler.y * 180 / Math.PI, // Only Y rotation allowed
+                  z: originalRot.z // Keep original Z rotation
+                });
+              } else {
+                // For small objects: allow full rotation
+                heldObject.setAttribute("rotation", {
+                  x: euler.x * 180 / Math.PI,
+                  y: euler.y * 180 / Math.PI,
+                  z: euler.z * 180 / Math.PI
+                });
+              }
 
               // Update last hand quaternion for next frame
               lastHandQuat.copy(handWorldQuat);
@@ -403,11 +462,15 @@ scale="1 0.7 1">
 </a-entity>
 
     <!-- POTTERY WHEEL AND VASE -->
-    <a-entity position="-0.58 -0.5 0.58">
-    <a-entity gltf-model="objects/potters_wheel.glb" 
+    <a-entity id="wheel-container" position="-0.58 -0.5 0.58">
+    <a-entity id="potters-wheel" 
+    gltf-model="objects/potters_wheel.glb" 
     position="-0.0065 -0.04283 2.90938" 
     scale="0.9 0.9 0.9" 
-    rotation="176 180 0">
+    rotation="0 180 0"
+    grabbable=""
+    data-title="Potter's Wheel"
+    data-description="The potter's wheel - push and pull to move it around, rotate to change its orientation.">
     </a-entity>
     </a-entity>
 
