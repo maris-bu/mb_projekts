@@ -128,6 +128,8 @@
           let heldObject = null;
           let originalRot = { x: 0, y: 0, z: 0 };
           let lastHandQuat = new THREE.Quaternion();
+          let lastHandPos = new THREE.Vector3();
+          let handVelocity = new THREE.Vector3();
           const hand = this.el;
 
           hand.addEventListener("triggerdown", (e) => {
@@ -154,8 +156,21 @@
               const rot = heldObject.getAttribute("rotation");
               originalRot = { x: rot.x, y: rot.y, z: rot.z };
               
+              // Store initial position if not already stored
+              if (!heldObject.hasAttribute("data-initial-pos")) {
+                const pos = heldObject.getAttribute("position");
+                heldObject.setAttribute("data-initial-pos", `${pos.x} ${pos.y} ${pos.z}`);
+              }
+              
+              // Store initial rotation if not already stored
+              if (!heldObject.hasAttribute("data-initial-rot")) {
+                heldObject.setAttribute("data-initial-rot", `${rot.x} ${rot.y} ${rot.z}`);
+              }
+              
               // Store initial hand rotation
               hand.object3D.getWorldQuaternion(lastHandQuat);
+              lastHandPos.copy(handWorldPos);
+              handVelocity.set(0, 0, 0);
               
               heldObject.setAttribute("grabbed", true);
             }
@@ -164,6 +179,10 @@
           hand.addEventListener("triggerup", (e) => {
             if (heldObject) {
               heldObject.removeAttribute("grabbed");
+              
+              // Apply throw velocity
+              heldObject.setAttribute("throw-velocity", handVelocity);
+              
               heldObject = null;
             }
           });
@@ -174,6 +193,10 @@
               const handWorldQuat = new THREE.Quaternion();
               hand.object3D.getWorldPosition(handWorldPos);
               hand.object3D.getWorldQuaternion(handWorldQuat);
+
+              // Calculate hand velocity
+              handVelocity.subVectors(handWorldPos, lastHandPos).multiplyScalar(60); // 60 FPS normalization
+              lastHandPos.copy(handWorldPos);
 
               // Update position
               heldObject.setAttribute("position", {
@@ -211,6 +234,110 @@
               lastHandQuat.copy(handWorldQuat);
             }
           };
+        }
+      });
+
+      // Throw component - applies velocity to thrown objects with reset after 2 seconds
+      AFRAME.registerComponent("throw-velocity", {
+        schema: { 
+          x: { type: "number", default: 0 },
+          y: { type: "number", default: 0 },
+          z: { type: "number", default: 0 }
+        },
+        init() {
+          this.velocity = new THREE.Vector3(this.data.x, this.data.y, this.data.z);
+          this.gravity = -9.8;
+          this.isThrown = true;
+          this.throwTime = 0;
+          this.throwDuration = 2; // 2 seconds before reset
+          this.raycaster = new THREE.Raycaster();
+          this.raycaster.far = 0.15; // Smaller detection range
+          this.lastPos = new THREE.Vector3(0, 0, 0);
+          this.checkCollisionCounter = 0;
+          
+          // Get initial position from stored data attribute
+          const initialPosStr = this.el.getAttribute("data-initial-pos");
+          if (initialPosStr) {
+            const parts = initialPosStr.split(" ");
+            this.originalPosition = { x: parseFloat(parts[0]), y: parseFloat(parts[1]), z: parseFloat(parts[2]) };
+          } else {
+            const pos = this.el.getAttribute("position");
+            this.originalPosition = { x: pos.x, y: pos.y, z: pos.z };
+          }
+          
+          // Get initial rotation from stored data attribute
+          const initialRotStr = this.el.getAttribute("data-initial-rot");
+          if (initialRotStr) {
+            const parts = initialRotStr.split(" ");
+            this.originalRotation = { x: parseFloat(parts[0]), y: parseFloat(parts[1]), z: parseFloat(parts[2]) };
+          } else {
+            const rot = this.el.getAttribute("rotation");
+            this.originalRotation = { x: rot.x, y: rot.y, z: rot.z };
+          }
+        },
+        tick(time, timeDelta) {
+          if (this.isThrown) {
+            this.throwTime += timeDelta;
+            const deltaSeconds = timeDelta / 1000;
+            const pos = this.el.getAttribute("position");
+            
+            // Check if 2 seconds have passed - reset object
+            if (this.throwTime >= this.throwDuration * 1000) {
+              this.el.setAttribute("position", this.originalPosition);
+              this.el.setAttribute("rotation", this.originalRotation);
+              this.isThrown = false;
+              this.el.removeAttribute("throw-velocity");
+              return;
+            }
+            
+            // Apply velocity with better physics
+            const prevY = pos.y;
+            pos.x += this.velocity.x * deltaSeconds;
+            pos.y += this.velocity.y * deltaSeconds + (this.gravity * deltaSeconds * deltaSeconds) / 2;
+            pos.z += this.velocity.z * deltaSeconds;
+            
+            // Apply gravity
+            this.velocity.y += this.gravity * deltaSeconds;
+            
+            // Only check collision every few frames to avoid getting stuck
+            this.checkCollisionCounter++;
+            if (this.checkCollisionCounter >= 3) {
+              this.checkCollisionCounter = 0;
+              
+              const currentPos = new THREE.Vector3(pos.x, pos.y, pos.z);
+              const scene = this.el.sceneEl.object3D;
+              
+              // Check collision downward only (for ground)
+              const downDir = new THREE.Vector3(0, -1, 0);
+              this.raycaster.set(currentPos, downDir);
+              const downIntersects = this.raycaster.intersectObjects(scene.children, true);
+              
+              let groundCollision = false;
+              for (let i = 0; i < downIntersects.length; i++) {
+                const intersect = downIntersects[i];
+                if (intersect.object === this.el.object3D || intersect.object.el === this.el) {
+                  continue;
+                }
+                
+                // Only stop downward movement on ground collision
+                if (intersect.distance < 0.1 && this.velocity.y < 0) {
+                  this.velocity.y = 0; // Stop falling
+                  groundCollision = true;
+                  break;
+                }
+              }
+            }
+            
+            // Stop throwing if velocity is very low and falling
+            const speed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
+            if (speed < 0.01 && this.velocity.y < 0.1) {
+              this.isThrown = false;
+              this.el.removeAttribute("throw-velocity");
+            }
+            
+            this.el.setAttribute("position", pos);
+            this.lastPos.copy(new THREE.Vector3(pos.x, pos.y, pos.z));
+          }
         }
       });
 
@@ -258,9 +385,9 @@
 <!-- NAVMESH (aframe-extras) -->
 <a-entity 
 gltf-model="objects/Pottery_collider.glb" 
-nav-mesh="" visible="false" 
-position="-0.06711 -2.37585 3.59505" 
-scale="0.95 1 0.98">
+visible="false" 
+position="0 -2.76169 3.5693" 
+scale="0.9 1 0.9">
 </a-entity>
 
 <!-- COLLIDER -->
