@@ -104,6 +104,87 @@
         document.head.appendChild(s);
       });
 
+      // Load VR popup banner component
+      const bannerScript = document.createElement("script");
+      bannerScript.src = "components/vr-popup-banner.js";
+      document.head.appendChild(bannerScript);
+
+      // Raycaster component for hand pointing
+      AFRAME.registerComponent("hand-raycaster", {
+        init() {
+          const hand = this.el;
+          let lastBanner = null;
+          
+          hand.addEventListener("triggerdown", () => {
+            // Get camera position
+            const camera = document.querySelector("[camera]");
+            if (!camera) return;
+            
+            const cameraPos = new THREE.Vector3();
+            camera.object3D.getWorldPosition(cameraPos);
+            
+            const handPos = new THREE.Vector3();
+            hand.object3D.getWorldPosition(handPos);
+            
+            // Direction from camera to hand
+            const direction = new THREE.Vector3().subVectors(handPos, cameraPos).normalize();
+            
+            const raycaster = new THREE.Raycaster(cameraPos, direction);
+            const scene = hand.sceneEl.object3D;
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            
+            // Find first banner in intersections
+            for (let i = 0; i < intersects.length; i++) {
+              const obj = intersects[i].object;
+              
+              // Find parent banner entity
+              let currentObj = obj;
+              while (currentObj) {
+                if (currentObj.el && currentObj.el.classList.contains("expandable-banner")) {
+                  // Trigger banner click
+                  currentObj.el.dispatchEvent(new CustomEvent("click"));
+                  return;
+                }
+                currentObj = currentObj.parent;
+              }
+            }
+          });
+          
+          // Visual feedback - show distance to banners
+          this.tick = () => {
+            const banners = document.querySelectorAll(".expandable-banner");
+            const handPos = new THREE.Vector3();
+            hand.object3D.getWorldPosition(handPos);
+            
+            let closestBanner = null;
+            let closestDist = Infinity;
+            
+            banners.forEach(banner => {
+              if (!banner.object3D) return;
+              
+              const bannerPos = new THREE.Vector3();
+              banner.object3D.getWorldPosition(bannerPos);
+              const dist = handPos.distanceTo(bannerPos);
+              
+              if (dist < closestDist) {
+                closestDist = dist;
+                closestBanner = banner;
+              }
+            });
+            
+            // Highlight closest banner if within range
+            banners.forEach(banner => {
+              const bgEl = banner.querySelector("[position='0 0 -0.01']");
+              if (bgEl && banner === closestBanner && closestDist < 2) {
+                bgEl.setAttribute("material", "color: #000000; transparent: true; opacity: 1");
+              } else if (bgEl) {
+                bgEl.setAttribute("material", "color: #000000; transparent: true; opacity: 0.7");
+              }
+            });
+          };
+        }
+      });
+
       // Spark splat component
       AFRAME.registerComponent("splat", {
         schema: { src: { default: "" } },
@@ -421,15 +502,17 @@
             rotation="0 47.561 0"
             movement-controls="speed: 0.1 ; constrainToNavMesh: true"
           >
-            <a-entity camera look-controls position="0 2.5same 0"></a-entity>
+            <a-entity camera look-controls position="0 2.5same 0" vr-popup-banner></a-entity>
 
             <a-entity id="leftHand" 
               oculus-touch-controls="hand: left"
-              simple-grab>
+              simple-grab
+              hand-raycaster>
             </a-entity>
             <a-entity id="rightHand" 
               oculus-touch-controls="hand: right"
-              simple-grab>
+              simple-grab
+              hand-raycaster>
             </a-entity>
           </a-entity>
 
